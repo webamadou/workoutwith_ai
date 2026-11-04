@@ -56,7 +56,7 @@ Un fournisseur est actif s'il a une clé **et** un modèle conversationnel. Les 
 
 ## Déploiement Netlify
 
-1. Créer un projet Supabase, puis appliquer les migrations : `npx supabase link --project-ref <ref>` et `npx supabase db push`.
+1. Créer un projet Supabase, puis appliquer les migrations : `npx supabase link --project-ref <ref>` et `npx supabase db push --remote`. La CLI v3 vise la base locale par défaut ; `--remote` est nécessaire pour la base hébergée.
 2. Dans Supabase › Authentication › URL Configuration, déclarer l'URL Netlify du site.
 3. Créer le site Netlify depuis le dépôt (la configuration est dans `netlify.toml`) et définir les variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` et, si souhaité, les variables IA. La clé `SUPABASE_SERVICE_ROLE_KEY` n'est **pas** nécessaire en production.
 4. Les appels IA à plusieurs outils peuvent dépasser le délai par défaut des fonctions synchrones : vérifier la limite de votre offre Netlify et ajuster `AI_TIMEOUT_MS`.

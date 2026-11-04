@@ -235,7 +235,7 @@ async function abandon() {
 
     <!-- Exercice en cours -->
     <section class="mt-4" :aria-labelledby="`ex-${pe.id}`">
-      <ExerciseDemo :media="ex.exercise_media" compact />
+      <ExerciseDemo :media="ex.exercise_media" :slug="ex.slug" compact />
       <div class="mt-4 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h1 :id="`ex-${pe.id}`" class="font-display text-4xl font-semibold leading-none">{{ ex.name }}</h1>

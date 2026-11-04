@@ -4,8 +4,11 @@ import { usePreferredReducedMotion } from '@vueuse/core'
 import { Pause, Play } from 'lucide-vue-next'
 import type { Joints, PoseAnimation } from '@shared/exercises/poses'
 import type { ExerciseMedia } from '@/services/types'
+import DemoPlayer from './DemoPlayer.vue'
+import { demoFor } from '@shared/exercises/demos'
 
-const props = withDefaults(defineProps<{ media: ExerciseMedia[]; compact?: boolean }>(), { compact: false })
+const props = withDefaults(defineProps<{ media: ExerciseMedia[]; compact?: boolean; slug?: string }>(), { compact: false })
+const demo = computed(() => (props.slug ? demoFor(props.slug) : undefined))
 
 const anim = computed(() => props.media.find((m) => m.kind === 'animation')?.data as PoseAnimation | undefined)
 const image = computed(() => props.media.find((m) => m.kind === 'image'))
@@ -73,7 +76,8 @@ const angleOf = (f: Joints, hand: string) => {
 </script>
 
 <template>
-  <figure class="relative overflow-hidden rounded-2xl bg-surface-2" :class="compact ? 'aspect-[4/3]' : 'aspect-[4/3] sm:aspect-[16/10]'">
+  <DemoPlayer v-if="demo" :demo="demo" :compact="compact" />
+  <figure v-else class="relative overflow-hidden rounded-2xl bg-surface-2" :class="compact ? 'aspect-[4/3]' : 'aspect-[4/3] sm:aspect-[16/10]'">
     <video v-if="video?.url" :src="video.url" class="size-full object-cover" autoplay muted loop playsinline :aria-label="alt" />
     <img v-else-if="image?.url" :src="image.url" :alt="alt" class="size-full object-cover" />
     <template v-else-if="anim && frame">

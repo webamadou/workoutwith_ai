@@ -4,6 +4,9 @@ import { useRoute } from 'vue-router'
 import { TriangleAlert } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import ExerciseDemo from '@/components/exercise/ExerciseDemo.vue'
+import ExerciseGuide from '@/components/exercise/ExerciseGuide.vue'
+import { demoFor } from '@shared/exercises/demos'
+import { fetchEquipment } from '@/services/profile'
 import TrendChart from '@/components/progress/TrendChart.vue'
 import { useCatalogStore } from '@/stores/catalog'
 import { useAuthStore } from '@/stores/auth'
@@ -23,10 +26,13 @@ const toast = useToast()
 const sets = shallowRef<PerformedSet[]>([])
 
 const ex = computed(() => catalog.bySlug.get(route.params.slug as string))
+const demo = computed(() => (ex.value ? demoFor(ex.value.slug) : undefined))
+const owned = shallowRef<string[]>([])
 
 watch(() => route.params.slug, async () => {
   try {
     await Promise.all([catalog.load(), plan.loaded ? null : plan.load()])
+    owned.value = (await fetchEquipment()).map((e) => e.equipment_key)
     if (ex.value) sets.value = await fetchSets({ exerciseId: ex.value.id })
   } catch (e) { toast.error(e) }
 }, { immediate: true })
@@ -63,7 +69,8 @@ const chart = computed(() => ({
   <div v-if="ex">
     <PageHeader :title="ex.name" :subtitle="MUSCLE_LABELS[ex.primary_muscle]" back="/exercices" />
 
-    <ExerciseDemo :media="ex.exercise_media" />
+    <ExerciseDemo :media="ex.exercise_media" :slug="ex.slug" />
+    <ExerciseGuide v-if="demo" :demo="demo" :owned="owned" />
 
     <div v-if="cautions.length" role="note" class="mt-4 flex gap-3 rounded-2xl bg-energy/15 p-4 text-sm">
       <TriangleAlert class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
