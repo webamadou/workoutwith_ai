@@ -1,0 +1,47 @@
+{
+  "format": "workoutwith-ai/import",
+  "version": 1,
+  "profile": {
+    "height_cm": 170,
+    "goal": "Musculation et réduction progressive du tour de taille",
+    "experience_level": "returning",
+    "sessions_per_week": 3,
+    "available_days": [1, 3, 5],
+    "limitation_tags": ["abdominal"],
+    "limitations": "Antécédents de douleurs abdominales : éviter les exercices qui déclenchent des douleurs et demander une évaluation médicale appropriée."
+  },
+  "equipment": [
+    { "equipment_key": "dumbbell", "quantity": 2, "details": "Deux haltères réglables" },
+    { "equipment_key": "weight_plate", "quantity": 12, "details": "8 disques de 1 kg, 4 disques de 2 kg" },
+    { "equipment_key": "resistance_band", "quantity": 1, "details": "Bandes de résistance" },
+    { "equipment_key": "pushup_handles", "quantity": 2, "details": "Poignées de pompes" }
+  ],
+  "measurements": [
+    { "measured_on": null, "weight_kg": 74, "note": "Poids initial (ancien suivi)" }
+  ],
+  "program": {
+    "template": "reprise-8-semaines",
+    "start_date": null,
+    "available_days": [1, 3, 5],
+    "mark_past_as_to_verify": true
+  },
+  "sessions": [
+    {
+      "ref": "ancien-suivi-pompes",
+      "title": "Pompes avec poignées (ancien suivi)",
+      "date": null,
+      "status": "completed",
+      "comment": "Résultat confirmé. Difficulté : légèrement difficile sur les dernières répétitions.",
+      "exercises": [
+        {
+          "exercise_slug": "pompes",
+          "sets": [
+            { "reps": 8, "difficulty": 3, "technique": { "variant": "poignées", "pause_bottom_s": 2, "pause_top": true, "range": "corps maintenu suspendu, poitrine non posée au sol" } },
+            { "reps": 12, "difficulty": 3, "rest_s": 60, "technique": { "variant": "poignées", "pause_bottom_s": 2, "pause_top": true, "range": "corps maintenu suspendu, poitrine non posée au sol" } },
+            { "reps": 12, "difficulty": 3, "rest_s": 60, "note": "Dernières répétitions légèrement difficiles", "technique": { "variant": "poignées", "pause_bottom_s": 2, "pause_top": true, "range": "corps maintenu suspendu, poitrine non posée au sol" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

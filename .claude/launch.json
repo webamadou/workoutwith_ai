@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "export PATH=$HOME/.nvm/versions/node/v22.21.0/bin:$PATH && npx netlify dev --port 8888 --no-open"],
+      "port": 8888
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "export PATH=$HOME/.nvm/versions/node/v22.21.0/bin:$PATH && npx vite --port 5173"],
+      "port": 5173
+    }
+  ]
+}

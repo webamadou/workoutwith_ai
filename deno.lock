@@ -1,0 +1,48 @@
+{
+  "version": "5",
+  "remote": {
+    "https://edge.netlify.com/": "607baf43414ddf5d42a24cf0e0ac7d03cc02fbc96f21bc34f027935060e28793",
+    "https://edge.netlify.com/bootstrap/config.ts": "6a2ce0e544e15e8f8883a5c18da5948e37fd0f2619f68cb31f3af53c51817025",
+    "https://edge.netlify.com/bootstrap/context.ts": "2260177df4a7d692f31177ccbf2de969cd8db1269c564a45517d6e47fd7d248f",
+    "https://edge.netlify.com/bootstrap/cookie.ts": "8b0baae708989ca183c6f3b4ab3d029e6abcbc2e43f93edeb0ff447b3bbc3a05",
+    "https://edge.netlify.com/bootstrap/edge_function.ts": "0c6c24959154a4ac64e24077adea5b4d23f01704a1dd1290df56fa9e4c6801f3",
+    "https://edge.netlify.com/bootstrap/globals/types.ts": "eaa6148ded3121d8dee62dd91c86e7fe76601df0f3ca8d7962243a30f4c8935f"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@anthropic-ai/sdk@^1.4.0",
+        "npm:@fontsource/barlow-condensed@^5.3.0",
+        "npm:@fontsource/barlow@^5.3.0",
+        "npm:@netlify/functions@^5.3.0",
+        "npm:@playwright/test@^1.64.1",
+        "npm:@supabase/supabase-js@^2.109.0",
+        "npm:@tailwindcss/vite@^4.3.4",
+        "npm:@types/node@^26.6.6",
+        "npm:@vitejs/plugin-vue@^6.0.10",
+        "npm:@vue/test-utils@^2.5.1",
+        "npm:@vue/tsconfig@~0.9.1",
+        "npm:@vueuse/core@^14.4.0",
+        "npm:chart.js@^4.6.1",
+        "npm:jsdom@^29.1.1",
+        "npm:lucide-vue-next@1",
+        "npm:netlify-cli@^26.2.0",
+        "npm:openai@^6.49.0",
+        "npm:pinia@^4.1.0",
+        "npm:reka-ui@^2.11.0",
+        "npm:supabase@3",
+        "npm:tailwindcss@^4.3.4",
+        "npm:tsx@^4.23.15",
+        "npm:typescript@^5.9.3",
+        "npm:vite-plugin-pwa@2",
+        "npm:vite@^8.3.5",
+        "npm:vitest@^4.1.12",
+        "npm:vue-chartjs@^5.3.4",
+        "npm:vue-router@^5.4.0",
+        "npm:vue-tsc@^3.3.14",
+        "npm:vue@^3.5.44",
+        "npm:zod@^4.6.7"
+      ]
+    }
+  }
+}

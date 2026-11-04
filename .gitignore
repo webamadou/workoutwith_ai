@@ -1,0 +1,11 @@
+node_modules
+dist
+dev-dist
+.env
+.env.local
+.netlify
+test-results
+playwright-report
+.DS_Store
+supabase/.temp
+supabase/.branches
