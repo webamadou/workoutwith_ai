@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Play, Sparkles, TrendingDown, TrendingUp, Minus as Flat } from 'lucide-vue-next'
+import { Play, Sparkles, TrendingDown, TrendingUp, UserRound, Minus as Flat } from 'lucide-vue-next'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -123,9 +123,14 @@ function start() {
 
 <template>
   <div>
-    <header class="mb-6">
-      <p class="text-muted">{{ formatDay(new Date().toISOString()) }}</p>
-      <h1 class="font-display text-4xl font-semibold leading-tight">Bonjour {{ firstName }}</h1>
+    <header class="mb-6 flex items-start justify-between gap-3">
+      <div>
+        <p class="text-muted">{{ formatDay(new Date().toISOString()) }}</p>
+        <h1 class="font-display text-4xl font-semibold leading-tight">Bonjour {{ firstName }}</h1>
+      </div>
+      <RouterLink to="/profil" aria-label="Ouvrir le profil" class="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-surface lg:hidden">
+        <UserRound class="size-5" aria-hidden="true" />
+      </RouterLink>
     </header>
 
     <div v-if="loading" class="space-y-4" aria-busy="true">

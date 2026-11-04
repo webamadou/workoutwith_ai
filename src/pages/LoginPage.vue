@@ -10,6 +10,7 @@ const route = useRoute()
 const mode = ref<'signin' | 'signup'>('signin')
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const name = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -19,6 +20,8 @@ const messages: Record<string, string> = {
   'Invalid login credentials': 'E-mail ou mot de passe incorrect.',
   'User already registered': 'Un compte existe déjà avec cet e-mail.',
   'Email not confirmed': 'Confirmez votre e-mail avant de vous connecter.',
+  'Load failed': 'Impossible de joindre Supabase. Vérifiez votre connexion Internet, puis réessayez.',
+  'Failed to fetch': 'Impossible de joindre Supabase. Vérifiez votre connexion Internet, puis réessayez.',
 }
 
 async function submit() {
@@ -83,7 +86,10 @@ async function submit() {
           </label>
           <label class="flex flex-col gap-1.5">
             <span class="text-sm font-medium">Mot de passe</span>
-            <input v-model="password" type="password" required minlength="8" :autocomplete="mode === 'signin' ? 'current-password' : 'new-password'" class="h-12 rounded-xl border border-line bg-surface px-4 outline-none focus:border-accent" />
+            <span class="relative">
+              <input v-model="password" :type="showPassword ? 'text' : 'password'" required minlength="8" :autocomplete="mode === 'signin' ? 'current-password' : 'new-password'" class="h-12 w-full rounded-xl border border-line bg-surface px-4 pr-20 outline-none focus:border-accent" />
+              <button type="button" class="absolute inset-y-0 right-3 text-sm font-medium text-accent" :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'" @click="showPassword = !showPassword">{{ showPassword ? 'Masquer' : 'Afficher' }}</button>
+            </span>
             <span v-if="mode === 'signup'" class="text-xs text-muted">8 caractères minimum.</span>
           </label>
           <p v-if="error" role="alert" class="rounded-xl bg-bad/10 px-4 py-3 text-sm text-bad">{{ error }}</p>

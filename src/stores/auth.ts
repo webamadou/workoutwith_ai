@@ -65,5 +65,16 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = await updateProfile(user.value.id, patch)
   }
 
-  return { session, profile, ready, user, onboarded, init, signIn, signUp, signOut, loadProfile, saveProfile }
+  async function changeEmail(email: string) {
+    const { data, error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: window.location.origin })
+    if (error) throw error
+    return data.user.email?.toLowerCase() === email.toLowerCase()
+  }
+
+  async function changePassword(password: string) {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+  }
+
+  return { session, profile, ready, user, onboarded, init, signIn, signUp, signOut, loadProfile, saveProfile, changeEmail, changePassword }
 })

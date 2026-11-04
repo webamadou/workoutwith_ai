@@ -57,6 +57,13 @@ const exporting = ref(false)
 const showDelete = ref(false)
 const deleteConfirm = ref('')
 const deleting = ref(false)
+const newEmail = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const savingEmail = ref(false)
+const savingPassword = ref(false)
+const emailMessage = ref('')
+const passwordMessage = ref('')
 
 onMounted(async () => {
   try {
@@ -140,6 +147,35 @@ async function signOut() {
   await router.replace('/connexion')
 }
 
+async function changeEmail() {
+  emailMessage.value = ''
+  if (newEmail.value.trim().toLowerCase() === auth.user?.email?.toLowerCase()) {
+    emailMessage.value = 'Cette adresse est déjà celle de votre compte.'
+    return
+  }
+  savingEmail.value = true
+  try {
+    const changed = await auth.changeEmail(newEmail.value.trim())
+    newEmail.value = ''
+    toast.success(changed ? 'Adresse e-mail modifiée.' : 'Vérifiez les e-mails de confirmation pour valider la nouvelle adresse.')
+  } catch (e) { emailMessage.value = (e as Error).message } finally { savingEmail.value = false }
+}
+
+async function changePassword() {
+  passwordMessage.value = ''
+  if (newPassword.value !== confirmPassword.value) {
+    passwordMessage.value = 'Les mots de passe ne correspondent pas.'
+    return
+  }
+  savingPassword.value = true
+  try {
+    await auth.changePassword(newPassword.value)
+    newPassword.value = ''
+    confirmPassword.value = ''
+    toast.success('Mot de passe modifié.')
+  } catch (e) { passwordMessage.value = (e as Error).message } finally { savingPassword.value = false }
+}
+
 const input = 'h-12 w-full rounded-xl border border-line bg-surface px-3 outline-none focus:border-accent'
 const area = 'w-full rounded-xl border border-line bg-surface p-3 outline-none focus:border-accent'
 </script>
@@ -207,6 +243,30 @@ const area = 'w-full rounded-xl border border-line bg-surface p-3 outline-none f
 
       <AppButton type="submit" size="lg" block :loading="saving">Enregistrer le profil</AppButton>
     </form>
+
+    <section class="mt-6 rounded-2xl border border-line p-5" aria-labelledby="account-title">
+      <h2 id="account-title" class="font-semibold">Compte et sécurité</h2>
+      <p class="mt-1 text-sm text-muted">Adresse actuelle : {{ auth.user?.email }}</p>
+
+      <form class="mt-5 flex flex-col gap-3" @submit.prevent="changeEmail">
+        <label class="flex flex-col gap-1 text-sm font-medium">Nouvelle adresse e-mail
+          <input v-model="newEmail" type="email" autocomplete="email" required :class="input" />
+        </label>
+        <p v-if="emailMessage" role="alert" class="text-sm text-bad">{{ emailMessage }}</p>
+        <AppButton type="submit" variant="secondary" block :loading="savingEmail">Modifier l’e-mail</AppButton>
+      </form>
+
+      <form class="mt-6 flex flex-col gap-3 border-t border-line pt-5" @submit.prevent="changePassword">
+        <label class="flex flex-col gap-1 text-sm font-medium">Nouveau mot de passe
+          <input v-model="newPassword" type="password" autocomplete="new-password" required minlength="8" :class="input" />
+        </label>
+        <label class="flex flex-col gap-1 text-sm font-medium">Confirmer le mot de passe
+          <input v-model="confirmPassword" type="password" autocomplete="new-password" required minlength="8" :class="input" />
+        </label>
+        <p v-if="passwordMessage" role="alert" class="text-sm text-bad">{{ passwordMessage }}</p>
+        <AppButton type="submit" variant="secondary" block :loading="savingPassword">Modifier le mot de passe</AppButton>
+      </form>
+    </section>
 
     <section id="programme" class="mt-6 rounded-2xl border border-line p-5">
       <h2 class="font-semibold">Programme</h2>
