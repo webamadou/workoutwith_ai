@@ -9,7 +9,7 @@ test('inscription, onboarding, séance reprise après rechargement, bilan', asyn
   await page.getByRole('button', { name: 'Créer un compte' }).click()
   await page.getByLabel('Prénom').fill('Testeur')
   await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Mot de passe').fill(password)
+  await page.getByRole('textbox', { name: 'Mot de passe' }).fill(password)
   await page.getByRole('button', { name: 'Créer mon compte' }).click()
 
   // Onboarding
@@ -49,6 +49,19 @@ test('inscription, onboarding, séance reprise après rechargement, bilan', asyn
   await expect(page.getByRole('timer')).toBeVisible()
   await page.getByRole('button', { name: 'Passer' }).click()
   await expect(page.getByText('9 rép.')).toBeVisible()
+
+  // Ajouter un exercice en cours de séance : il apparaît, survit au rechargement et se saisit
+  await page.getByRole('button', { name: 'Exercice', exact: true }).click()
+  const pick = page.getByRole('searchbox', { name: 'Rechercher un exercice' }).locator('xpath=following::button[1]')
+  const name = (await pick.locator('span').first().textContent())!
+  await pick.click()
+  await expect(page.getByRole('heading', { name })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name })).toBeVisible()
+  await page.getByRole('textbox', { name: 'Répétitions' }).fill('12')
+  await page.getByRole('button', { name: 'Valider la série' }).click()
+  await page.getByRole('button', { name: 'Passer' }).click()
+  await expect(page.getByText('12 rép.', { exact: true })).toBeVisible()
 
   // Terminer et consulter le bilan
   await page.getByRole('button', { name: 'Terminer', exact: true }).click()

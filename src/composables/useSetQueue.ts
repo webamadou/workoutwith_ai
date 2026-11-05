@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { saveSet, type SetInput } from '@/services/workout'
 
@@ -8,6 +8,8 @@ import { saveSet, type SetInput } from '@/services/workout'
  */
 const queue = useStorage<SetInput[]>('wwai-pending-sets', [])
 let flushing: Promise<void> | null = null
+/** Dernière cause d'échec de synchronisation, pour l'afficher au lieu d'un message générique. */
+export const lastSyncError = ref('')
 
 const key = (s: SetInput) => `${s.workout_session_id}|${s.exercise_id}|${s.set_number}`
 
@@ -16,19 +18,22 @@ function enqueue(s: SetInput) {
 }
 
 export function flushQueue(): Promise<void> {
+  if (!queue.value.length) return flushing ?? Promise.resolve()
   flushing ??= (async () => {
     try {
-      for (const item of [...queue.value]) {
+      // Boucle : une série ajoutée pendant l'envoi est prise au tour suivant.
+      while (queue.value.length) {
+        const item = queue.value[0]
+        const snapshot = JSON.stringify(item)
         try {
           await saveSet(item)
         } catch (e) {
-          const msg = (e as Error).message
-          if (!navigator.onLine || /fetch|network|load failed|timeout/i.test(msg)) throw e // réessai plus tard
-          // Rejet définitif par le serveur (donnée invalide) : on retire la série pour ne pas bloquer la file.
-          queue.value = queue.value.filter((q) => q !== item)
-          throw new Error(`Série refusée : ${msg}`)
+          lastSyncError.value = (e as Error).message
+          throw e
         }
-        queue.value = queue.value.filter((q) => q !== item)
+        // Une correction saisie pendant l'envoi doit rester dans la file.
+        queue.value = queue.value.filter((q) => key(q) !== key(item) || JSON.stringify(q) !== snapshot)
+        lastSyncError.value = ''
       }
     } finally {
       flushing = null
@@ -47,9 +52,7 @@ export function useSetQueue() {
     enqueue(s)
     try {
       await flushQueue()
-    } catch (e) {
-      if ((e as Error).message.startsWith('Série refusée')) throw e
-    }
+    } catch { /* La série reste enregistrée localement pour un nouvel essai. */ }
     return !queue.value.some((q) => key(q) === key(s))
   }
 

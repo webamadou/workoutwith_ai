@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStorage, useWakeLock } from '@vueuse/core'
-import { ChevronLeft, ChevronRight, CloudOff, Info, Pencil, TriangleAlert, X } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, CloudOff, Info, Pencil, Plus, TriangleAlert, X } from 'lucide-vue-next'
 import AppButton from '@/components/ui/AppButton.vue'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import ExerciseDemo from '@/components/exercise/ExerciseDemo.vue'
@@ -11,9 +11,9 @@ import RestTimerOverlay from '@/components/workout/RestTimerOverlay.vue'
 import { useCatalogStore } from '@/stores/catalog'
 import { useAuthStore } from '@/stores/auth'
 import { deleteSet, fetchSession, fetchSets, updateSession } from '@/services/workout'
-import { MUSCLE_LABELS, type PerformedSet, type PlannedSession, type WorkoutSession } from '@/services/types'
+import { EQUIPMENT_LABELS, MUSCLE_LABELS, type Exercise, type PerformedSet, type PlannedExercise, type PlannedSession, type WorkoutSession } from '@/services/types'
 import { useRestTimer } from '@/composables/useRestTimer'
-import { useSetQueue } from '@/composables/useSetQueue'
+import { lastSyncError, useSetQueue } from '@/composables/useSetQueue'
 import { useToast } from '@/composables/useToast'
 import { formatKg, formatTarget } from '@/lib/format'
 import { exerciseHistory, suggestNext } from '@shared/progression/engine'
@@ -34,16 +34,23 @@ const editingSet = ref<number | null>(null)
 const showInfo = ref(false)
 const showFinish = ref(false)
 const showQuit = ref(false)
+const showAdd = ref(false)
+const search = ref('')
 const finish = ref({ perceived_difficulty: null as number | null, comment: '' })
 
 const rest = useRestTimer(id)
 const queue = useSetQueue()
 const wake = useWakeLock()
 const drafts = useStorage<Record<string, SetDraft>>(`wwai-draft-${id}`, {})
+// Exercices ajoutés en cours de séance : propres à cette séance, le programme n'est pas modifié.
+// shortcut: stockés sur l'appareil, perdus si le stockage est vidé avant la fin de séance ; passer en base si besoin multi-appareils.
+const extras = useStorage<PlannedExercise[]>(`wwai-extra-${id}`, [])
+const isExtra = (e: { id: string }) => e.id.startsWith('extra-')
 
 onMounted(async () => {
   try {
     await catalog.load()
+    await queue.flush().catch(() => {})
     const r = await fetchSession(id)
     if (r.session.status === 'completed') return router.replace(`/seance/${id}/bilan`)
     session.value = r.session
@@ -57,7 +64,7 @@ onMounted(async () => {
   }
 })
 
-const exercises = computed(() => planned.value?.planned_exercises ?? [])
+const exercises = computed(() => [...(planned.value?.planned_exercises ?? []), ...extras.value])
 const index = computed({
   get: () => Math.min(session.value?.current_exercise_position ?? 0, Math.max(exercises.value.length - 1, 0)),
   set: (i) => {
@@ -123,7 +130,7 @@ async function validate(startedAt: number | null) {
   const setNumber = nextSetNumber.value
   const prevSet = doneSets.value.at(-1)
   const input = {
-    workout_session_id: id, exercise_id: pe.value.exercise_id, planned_exercise_id: pe.value.id, set_number: setNumber,
+    workout_session_id: id, exercise_id: pe.value.exercise_id, planned_exercise_id: isExtra(pe.value) ? null : pe.value.id, set_number: setNumber,
     reps: isDuration.value ? null : d.reps, duration_s: isDuration.value ? d.duration_s : null,
     load_kg: loaded.value ? d.load_kg : null, difficulty: d.difficulty, note: d.note.trim() || null,
     pain: d.pain, pain_note: d.pain ? d.pain_note.trim() || null : null,
@@ -136,7 +143,7 @@ async function validate(startedAt: number | null) {
     // Mise à jour locale immédiate (même hors ligne).
     const local = { ...input, id: crypto.randomUUID(), user_id: auth.user!.id } as PerformedSet
     sets.value = [...sets.value.filter((s) => !(s.exercise_id === input.exercise_id && s.set_number === setNumber)), local]
-    if (!synced) toast.info('Hors ligne : série gardée sur l’appareil, synchronisation automatique.')
+    if (!synced) toast.error(`Série conservée sur cet appareil, mais non synchronisée${lastSyncError.value ? ` : ${lastSyncError.value}` : '.'}`)
     if (d.pain) toast.info('Douleur notée. Adaptez ou arrêtez l’exercice si besoin.')
     editingSet.value = null
     drafts.value = { ...drafts.value, [pe.value.id]: { ...d, difficulty: null, note: '', pain: false, pain_note: '' } }
@@ -149,6 +156,24 @@ async function validate(startedAt: number | null) {
   } finally {
     saving.value = false
   }
+}
+
+const candidates = computed(() => {
+  const inSession = new Set(exercises.value.map((e) => e.exercise_id))
+  const q = search.value.trim().toLowerCase()
+  return catalog.exercises.filter((e) => !inSession.has(e.id) && (!q || e.name.toLowerCase().includes(q)))
+})
+
+function addExercise(e: Exercise) {
+  const duration = e.measurement === 'duration'
+  extras.value = [...extras.value, {
+    id: `extra-${crypto.randomUUID()}`, planned_session_id: planned.value!.id, user_id: auth.user!.id, exercise_id: e.id,
+    position: exercises.value.length, sets: 2, reps_min: duration ? null : 8, reps_max: duration ? null : 12, duration_s: duration ? 30 : null,
+    rest_s: e.default_rest_s, load_kg: null, notes: 'Exercice ajouté pendant la séance.',
+  }]
+  showAdd.value = false
+  search.value = ''
+  index.value = exercises.value.length - 1
 }
 
 async function removeSet(s: PerformedSet) {
@@ -175,14 +200,15 @@ const totalDone = computed(() => sets.value.length)
 async function complete() {
   saving.value = true
   try {
-    await queue.flush()
-    if (queue.pending.value.some((p) => p.workout_session_id === id)) throw new Error('Des séries ne sont pas encore synchronisées. Vérifiez la connexion puis réessayez.')
+    await queue.flush().catch(() => {})
+    if (queue.pending.value.some((p) => p.workout_session_id === id)) throw new Error(`Des séries ne sont pas encore synchronisées${lastSyncError.value ? ` (${lastSyncError.value})` : ''}. Vérifiez la connexion puis réessayez.`)
     await updateSession(id, {
       status: 'completed', completed_at: new Date().toISOString(),
       perceived_difficulty: finish.value.perceived_difficulty, comment: finish.value.comment.trim() || null,
     })
     rest.stop()
     localStorage.removeItem(`wwai-draft-${id}`)
+    localStorage.removeItem(`wwai-extra-${id}`)
     await wake.release().catch(() => {})
     await router.replace(`/seance/${id}/bilan`)
   } catch (e) {
@@ -197,6 +223,7 @@ async function abandon() {
     await updateSession(id, { status: 'abandoned', completed_at: new Date().toISOString() })
     rest.stop()
     localStorage.removeItem(`wwai-draft-${id}`)
+    localStorage.removeItem(`wwai-extra-${id}`)
     await router.replace('/')
   } catch (e) { toast.error(e) }
 }
@@ -228,6 +255,11 @@ async function abandon() {
             :class="i === index ? 'bg-slate-ink text-chalk dark:bg-chalk dark:text-slate-ink' : exSets(e.exercise_id).length >= e.sets ? 'bg-good/15 text-good' : 'bg-surface'"
             @click="index = i">
             <span class="tabular">{{ i + 1 }}</span><span class="max-w-32 truncate">{{ catalog.byId.get(e.exercise_id)?.name }}</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="flex h-10 items-center gap-1 whitespace-nowrap rounded-full border border-dashed border-line px-3.5 text-sm font-medium text-muted" @click="showAdd = true">
+            <Plus class="size-4" aria-hidden="true" />Exercice
           </button>
         </li>
       </ol>
@@ -294,6 +326,7 @@ async function abandon() {
           <AppButton v-if="index < exercises.length - 1" size="lg" block @click="index = index + 1">Exercice suivant<ChevronRight class="size-5" aria-hidden="true" /></AppButton>
           <AppButton v-else size="lg" block @click="showFinish = true">Terminer la séance</AppButton>
           <AppButton variant="ghost" @click="editingSet = doneSets.length + 1">Ajouter une série</AppButton>
+          <AppButton variant="ghost" @click="showAdd = true"><Plus class="size-5" aria-hidden="true" />Ajouter un exercice</AppButton>
         </div>
       </div>
     </div>
@@ -312,6 +345,19 @@ async function abandon() {
       </ol>
       <ul class="mt-4 list-disc space-y-1 rounded-xl bg-surface-2 p-4 pl-8 text-sm">
         <li v-for="(s, i) in ex.safety_tips" :key="i">{{ s }}</li>
+      </ul>
+    </BottomSheet>
+
+    <BottomSheet v-model:open="showAdd" title="Ajouter un exercice" description="Vous vous sentez en forme ? Il s’ajoute à cette séance seulement, le programme reste inchangé.">
+      <input v-model="search" type="search" placeholder="Rechercher…" aria-label="Rechercher un exercice" class="h-12 w-full rounded-xl border border-line bg-surface px-4 outline-none focus:border-accent">
+      <ul class="mt-3 flex max-h-[50dvh] flex-col gap-2 overflow-y-auto">
+        <li v-for="e in candidates" :key="e.id">
+          <button type="button" class="flex min-h-14 w-full flex-col items-start rounded-xl bg-surface-2 px-4 py-2 text-left" @click="addExercise(e)">
+            <span class="font-medium">{{ e.name }}</span>
+            <span class="text-xs text-muted">{{ MUSCLE_LABELS[e.primary_muscle] }} · {{ e.equipment.length ? e.equipment.map((k) => EQUIPMENT_LABELS[k]).join(', ') : 'Poids du corps' }}</span>
+          </button>
+        </li>
+        <li v-if="!candidates.length" class="text-sm text-muted">Aucun exercice trouvé.</li>
       </ul>
     </BottomSheet>
 
